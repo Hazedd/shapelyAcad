@@ -1,76 +1,69 @@
 import array
-import math
 
 from pyautocad import APoint, Autocad
-from shapely.geometry import LineString, MultiLineString, Point
-from shapely.ops import linemerge
+from shapely.geometry import LineString, Point
 
 
-class AutocadUtilityService(object):
-    def __init__(self):
-        self.acad = Autocad(create_if_not_exists=True)
-        # self.print_front()
-        # print(self.acad.doc.Name)
+class AutocadService:
+    acad = Autocad(create_if_not_exists=True)
 
-    def print_front(self, text="Python connected\n"):
-        self.acad.prompt(text)
-
-    def _breakUp_autoCad_polyLine_coordinates(self, autoCadLineObject, numberOfCoordinates):
+    @staticmethod
+    def autocad_polyline_to_coordinates(autocad_line_obj, number_of_coordinates):
         res = tuple(
-            autoCadLineObject.Coordinates[n : n + numberOfCoordinates]
-            for n, i in enumerate(autoCadLineObject.Coordinates)
-            if n % numberOfCoordinates == 0
+            autocad_line_obj.Coordinates[n : n + number_of_coordinates]
+            for n, i in enumerate(autocad_line_obj.Coordinates)
+            if n % number_of_coordinates == 0
         )
         return res
 
-    def _get_shapely_from_cad_object(self, cad_object):
-        if cad_object.ObjectName in ["AcDb3dPolyline"]:
-            return LineString(self._breakUp_autoCad_polyLine_coordinates(cad_object, 3))
-        elif cad_object.ObjectName in ["AcDbPolyline"]:
-            return LineString(self._breakUp_autoCad_polyLine_coordinates(cad_object, 2))
-        elif cad_object.ObjectName in ["AcDbPoint"]:
+    @classmethod
+    def get_shapely_from_cad_object(cls, cad_object):
+        if cad_object.ObjectName in ["AcDbPoint"]:
             return Point(cad_object.Coordinates)
         elif cad_object.ObjectName in ["AcDbLine"]:
             return LineString([cad_object.StartPoint, cad_object.EndPoint])
+        elif cad_object.ObjectName in ["AcDbPolyline"]:
+            return LineString(cls.autocad_polyline_to_coordinates(cad_object, 2))
+        elif cad_object.ObjectName in ["AcDb3dPolyline"]:
+            return LineString(cls.autocad_polyline_to_coordinates(cad_object, 3))
 
-    def _draw_polyline2D(self, shapelyLineObject, color=None):
-        points_2d = []
-        for item in shapelyLineObject.coords[:]:
-            points_2d.append(item[0])
-            points_2d.append(item[1])
+    @classmethod
+    def init_autocad_selection_and_get_shapely(cls):
+        selection = cls.acad.get_selection()
+        shapely_objects = [cls.get_shapely_from_cad_object(item) for item in selection]
+        return shapely_objects
+
+    @classmethod
+    def draw_polyline_2d(cls, shapely_line, color=None):
+        points_2d = [coord for coords in shapely_line.coords[:] for coord in coords]
         points_double = array.array("d", points_2d)
-        tester = self.acad.model.AddLightWeightPolyline(points_double)
+        line = cls.acad.model.AddLightWeightPolyline(points_double)
         if color is not None:
-            tester.Color = color
+            line.Color = color
 
-    def _draw_polyline3D(self, shapelyLineObject, color=None):
-        points_3d = []
-        for item in shapelyLineObject.coords[:]:
-            points_3d.append(item[0])
-            points_3d.append(item[1])
-
-            if not math.isnan(item[2]):
-                points_3d.append(item[2])
-            else:
-                points_3d.append(points_3d[-3])
-
+    @classmethod
+    def draw_polyline_3d(cls, shapely_line, color=None):
+        points_3d = [coord for coords in shapely_line.coords[:] for coord in coords]
         points_double = array.array("d", points_3d)
-        tester = self.acad.model.Add3Dpoly(points_double)
+        line = cls.acad.model.Add3Dpoly(points_double)
         if color is not None:
-            tester.Color = color
+            line.Color = color
 
-    def _draw_point(self, shapelyPointObject, color=None):
-        if shapelyPointObject.has_z:
-            p = APoint(shapelyPointObject.x, shapelyPointObject.y, shapelyPointObject.z)
-            tester = self.acad.model.AddPoint(p)
+    @classmethod
+    def draw_point(cls, shapely_point, color=None):
+        # todo: add draw as circle option
+        if shapely_point.has_z:
+            p = APoint(shapely_point.x, shapely_point.y, shapely_point.z)
+            point = cls.acad.model.AddPoint(p)
         else:
-            p = APoint(shapelyPointObject.x, shapelyPointObject.y)
-            tester = self.acad.model.AddPoint(p)
+            p = APoint(shapely_point.x, shapely_point.y)
+            point = cls.acad.model.AddPoint(p)
 
         if color is not None:
-            tester.Color = color
+            point.Color = color
 
-    def _profile_cutter(self, line, distance):
+    @staticmethod
+    def get_profile(line, distance):
         if distance <= 0.0 or distance >= line.length:
             return [LineString(line)]
         coords = list(line.coords)
@@ -80,51 +73,36 @@ class AutocadUtilityService(object):
                 return [LineString(coords[: i + 1]), LineString(coords[i:])]
             if pd > distance:
                 cp = line.interpolate(distance)
-                return [
-                    LineString(coords[:i] + [(cp.x, cp.y, cp.z)]),
-                    LineString([(cp.x, cp.y, cp.z)] + coords[i:]),
-                ]
-
-    def _get_multiLinestring_from_selection(self, selection):
-        return MultiLineString(selection)
-
-    def _merge_multiLinestring_to_linestring(self, shapelyMultiLinestringObject):
-        # if 90'hoek recht omhoog zelfde xy maar z anders dan wordt vloeiende lijn... is dit ok?
-        return linemerge(shapelyMultiLinestringObject)
-
-    def _create_autocad_selection_get_shapely(self):
-        selection = self.acad.get_selection()
-        shapelyObjectList = []
-        for item in selection:
-            shapelyObjectList.append(self._get_shapely_from_cad_object(item))
-        return shapelyObjectList
+                if cp.has_z:
+                    return [
+                        LineString(coords[:i] + [(cp.x, cp.y, cp.z)]),
+                        LineString([(cp.x, cp.y, cp.z)] + coords[i:]),
+                    ]
+                else:
+                    return [
+                        LineString(coords[:i] + [(cp.x, cp.y)]),
+                        LineString([(cp.x, cp.y)] + coords[i:]),
+                    ]
 
 
-class AutocadService(object):
-    def __init__(self):
-        self.Utilities = AutocadUtilityService()
-
-    def DrawShapelyObject(self, shapely_object, color: int = None):
-        # todo: make annotation text somewhere on the geometry ???
+class ShapelyAcad:
+    def draw_shapely(self, shapely_object, color: int = None):
         if shapely_object.geom_type == "LineString":
             if shapely_object.has_z:
-                self.Utilities._draw_polyline3D(shapely_object, color)
+                AutocadService.draw_polyline_3d(shapely_object, color)
             else:
-                self.Utilities._draw_polyline2D(shapely_object, color)
+                AutocadService.draw_polyline_2d(shapely_object, color)
 
         elif shapely_object.geom_type == "Point":
-            self.Utilities._draw_point(shapely_object, color)
+            AutocadService.draw_point(shapely_object, color)
 
-        # todo: implement multi linestring
         elif shapely_object.geom_type == "MultiLineString":
             for linestring in shapely_object:
-                print(linestring)
                 if linestring.has_z:
-                    self.Utilities._draw_polyline3D(linestring)
+                    AutocadService.draw_polyline_3d(linestring)
                 else:
-                    self.Utilities._draw_polyline2D(linestring)
+                    AutocadService.draw_polyline_2d(linestring)
 
-        # todo: not sure what to with a polygon in autocadService.....
         elif shapely_object.geom_type == "Polygon":
             raise NotImplementedError("Polygon")
 
@@ -132,29 +110,25 @@ class AutocadService(object):
             print(shapely_object.geom_type)
             raise NotImplementedError
 
-    def GetShapelyListFromSelection(self):
-        return self.Utilities._create_autocad_selection_get_shapely()
+    def draw_text(self, text_value, point=Point(), size=0.2):
+        # todo: add to service
+        AutocadService.acad.model.AddText(f"{text_value}", APoint(point.x, point.y), size)
 
-    def DrawProfileOverLine(self, shapelyLineObject, fromDistance, toDistance):
-        cuttedLine = self._GetShapelyObjectCutLineAt2PointsOnLine(shapelyLineObject, fromDistance, toDistance)
-        self.DrawShapelyObject(cuttedLine)
-        return cuttedLine
+    def get_shapelies_from_selection(self):
+        return AutocadService.init_autocad_selection_and_get_shapely()
 
-    def DrawText(self, text_value, point=Point(), size=0.2):
-        self.Utilities.acad.model.AddText(f"{text_value}", APoint(point.x, point.y), size)
-
-    def _GetShapelyObjectCutLineAt2PointsOnLine(self, shapelyLineObject, fromDistance, toDistance):
+    def draw_profile(self, shapelyLineObject, fromDistance, toDistance):
         if toDistance <= fromDistance:
             raise ValueError("toDistance less or equeal as fromDistance")
+
         LineToEnd = LineString(
-            [list(x.coords) for x in self.Utilities._profile_cutter(shapelyLineObject, toDistance)][0]
+            [list(x.coords) for x in AutocadService.get_profile(shapelyLineObject, toDistance)][0]
         )
-        cutFrontAndEndPoint = [
-            list(x.coords) for x in self.Utilities._profile_cutter(LineToEnd, fromDistance)
-        ]
+        cutFrontAndEndPoint = [list(x.coords) for x in AutocadService.get_profile(LineToEnd, fromDistance)]
         if len(cutFrontAndEndPoint) <= 1:
             cuttedLine = LineString(cutFrontAndEndPoint[0])
         else:
             cuttedLine = LineString(cutFrontAndEndPoint[1])
-        return cuttedLine
 
+        self.draw_shapely(cuttedLine)
+        return cuttedLine

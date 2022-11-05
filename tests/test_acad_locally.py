@@ -1,23 +1,23 @@
-from shapely.geometry import Point, LineString
+from shapely.geometry import LineString, Point
 
-from shapelyAcad import AutocadService
+from shapelyAcad import ShapelyAcad
 
 
 class TestSimplePolyline:
-
     def test_init_2d(self):
 
-        acad = AutocadService()
+        acad = ShapelyAcad()
 
         # draw point in AutoCAD
         point = Point([6, 3])
-        acad.DrawShapelyObject(point)
-        acad.DrawText("Sample Text", point)
+        acad.draw_shapely(point)
+        acad.draw_text("Sample Text", point)
 
         # draw line in AutoCAD
+        # line = LineString([[3, 0], [3, 10], [3, 20], [3, 30]])
         line = LineString([[3, 0, 0], [3, 10, 0], [3, 20, 0], [3, 30, 0]])
-        acad.DrawShapelyObject(line, color=3)
-        acad.DrawProfileOverLine(line, 5, 10)
+        acad.draw_shapely(line, color=3)
+        acad.draw_profile(line, 5, 10)
 
-        # select objects from AutoCAD
-        list_of_shapley_objects = acad.GetShapelyListFromSelection()
+        # select objects from AutoCAD, only when autocad is installed.
+        # list_of_shapley_objects = acad.GetShapelyListFromSelection()
