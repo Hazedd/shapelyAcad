@@ -52,4 +52,3 @@ jobs:
       run: |
         flit build --setup-py
         flit install --deps none --python $(which python)
-        python test_build.py
