@@ -3,9 +3,9 @@ name: Python package test and build
 on:
   workflow_call:
   push:
-    branches: [ "master", "refactor*", "feature-*"]
+    branches: [ "main", "refactor*", "feature-*"]
   pull_request:
-    branches: [ "master", "refactor*", "feature-*"]
+    branches: [ "main", "refactor*", "feature-*"]
 
 jobs:
   test-and-build:
