@@ -1,6 +1,6 @@
-# shapelyAcad, draw shapely objects in autocad
+# easily draw shapely objects in autocad
 
-Easy draw shapely objects in autocad by using pyAutocad.
+Easily draw shapely objects in autocad by using [pyautocad](https://pypi.org/project/pyautocad/).
 
 ## Installation
 
