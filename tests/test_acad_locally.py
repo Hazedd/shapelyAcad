@@ -22,5 +22,5 @@ class TestSimplePolyline:
         acad.draw_shapely(line, color=3)
         acad.draw_profile(line, 5, 10)
 
-        # select objects from AutoCAD
-        list_of_shapley_objects = acad.get_shapelies_from_selection()
+        # # select objects from AutoCAD
+        # list_of_shapley_objects = acad.get_shapelies_from_selection()
