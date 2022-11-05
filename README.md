@@ -60,3 +60,4 @@ Make an effort to test each bit of functionality you add. Try to keep it simple.
 - [iSort](https://github.com/PyCQA/isort)
 - [flit](https://flit.pypa.io/en/latest/)
 - [bumpversion](https://github.com/peritus/bumpversion)
+
