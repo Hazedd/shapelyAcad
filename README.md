@@ -14,18 +14,24 @@ pip install shapelyAcad
 
 ```python
 from shapely.geometry import Point, LineString
-from shapelyAcad import AutocadService
+from shapelyAcad import ShapelyAcad
 
-acad = AutocadService()
+s_acad = ShapelyAcad()
+
+# draw point in AutoCAD
 point = Point([6, 3])
-acad.DrawShapelyObject(point)
-acad.DrawText("Sample Text", point)
+s_acad.draw_shapely(point)
+s_acad.draw_text("Sample Text", point)
 
+# draw line in AutoCAD
+# line = LineString([[3, 0], [3, 10], [3, 20], [3, 30]])
 line = LineString([[3, 0, 0], [3, 10, 0], [3, 20, 0], [3, 30, 0]])
-acad.DrawShapelyObject(line, color=3)
-acad.DrawProfileOverLine(line, 5, 10)
+s_acad.draw_shapely(line, color=3)
+s_acad.draw_profile(line, 5, 10)
 
-list_of_shapley_objects = acad.GetShapelyListFromSelection()
+# select objects from AutoCAD
+list_of_shapley_objects = s_acad.get_shapelies_from_selection()
+
 ```
 
 # Contribute
