@@ -1,0 +1,92 @@
+[project]
+name = "shapelyAcad"
+description = "Draw shapley objects in AutoCAD"
+authors = [
+    { name = "Hazzed", email = "hazzed@shapelyAcad.com" }
+]
+readme = "README.md"
+dynamic = ["version"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3 :: Only",
+]
+requires-python = ">=3.10"
+
+dependencies = [
+    "pyautocad",
+    "shapely",
+    "numpy"
+]
+
+[project.optional-dependencies]
+
+dev = [
+    "flit",
+    "flake8",
+    "flake8-black",
+    "flake8-docstrings",
+    "black",
+    "pytest",
+    "isort",
+    "mypy",
+    "codecov",
+    "pytest-cov",
+    "pytest-mock",
+    "bumpversion"
+]
+
+[project.urls]
+homepage = "https://github.com/Hazedd/shapelyAcad"
+
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 110
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers --ignore=test_build.py"
+markers = [
+  "slow: Run tests that run slowly",
+  "serial"
+]
+testpaths = [
+    "tests"
+]
+pythonpath = [
+  "..", "shapelyAcad",
+]
+
+[tool.flit.module]
+name = "shapelyAcad"
+
+[tool.distutils.bdist_wheel]
+universal = true
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
