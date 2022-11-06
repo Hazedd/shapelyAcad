@@ -4,7 +4,7 @@ install:
 	flit install --deps develop
 
 test:
-	pytest --cov=shapelyAcad/ --cov-report=term-missing --cov-fail-under=85
+	mpytest --cov=shapelyAcad/ --cov-report=term-missing --cov-fail-under=85
 
 lint:
 	flake8 ./shapelyAcad ./tests
